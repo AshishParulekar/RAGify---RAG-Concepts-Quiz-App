@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 #load variable 
 load_dotenv() 
 
-Euron_Key=os.getenv("EURON_KEY")
+Euron_Key=os.getenv("Euron_Key")
 
 #Prompt Reading
 
@@ -141,5 +141,6 @@ if st.session_state['SubmitButton']==True:
 
 
   
+
 
 
