@@ -4,12 +4,43 @@ import os
 import ast
 import pandas as pd 
 from dotenv import load_dotenv
+import streamlit as st 
+import ast
 
+st.set_page_config('RAGiFY-Rag Concepts Quiz',page_icon=":sunrise:",layout="wide")
+st.header(" '🌈 ' Welcome To RAGIFY:-RAG concepts QUIZ")
+
+
+# init Seeesion_state
+
+if 'StartQuiz' not in st.session_state:
+   st.session_state['StartQuiz']=False
+
+#------
+
+if 'isQuestionGenerated' not in st.session_state:
+    st.session_state['isQuestionGenerated']=False
+
+if 'isAnswerGenerated' not in st.session_state:
+      st.session_state['isAnswerGenerated']=False
+
+if 'isSubmitAnswer' not in st.session_state:
+    st.session_state['isSubmitAnswer']=False
+
+#------------------------------------------------------------------
+
+if st.session_state['isSubmitAnswer']==False:
+    if st.session_state['isQuestionGenerated']==False:
+        StartButton=st.button("Start the Quiz",icon="👋")
+        if StartButton:
+            st.session_state['StartQuiz']=True
+        
 
 #load variable 
-load_dotenv() 
 
-Euron_Key=os.getenv()
+load_dotenv() 
+Euron_Key=os.getenv("Euron_Key")
+
 
 #Prompt Reading
 
@@ -19,126 +50,127 @@ QuesGenPrompt=AnswerCheckPrompt=promptFile['Prompt'][0]
 AnswerCheckPrompt=AnswerCheckPrompt=promptFile['Prompt'][1]
 #------------------------------------------------------------------------
 
-
 #Model Loading 
 from euriai import EuriaiClient
 client = EuriaiClient(
     api_key=Euron_Key,
     model="gpt-4.1-mini")
-response = client.generate_completion(
-    prompt=QuesGenPrompt,
-    temperature=0.7,
-    max_tokens=1000
-)
 
-#Output Processing 
 
-Response=response['choices'][0]['message']['content']
-Response=Response.replace('{{','{').replace('}}','}')
+#--------------------------------------------------------------------------
 
-Test=Response.replace(")","-")
-Test=Test.split("\n\n")
+if st.session_state['StartQuiz']==True:
+    with st.spinner("Generating Question   Please wait...."):
+        response = client.generate_completion(
+                prompt=QuesGenPrompt,
+                temperature=0.7,
+                max_tokens=1000
+        )
 
-QuestionBank=[]
-import ast
-for Question in Test:
-    dictResponse=ast.literal_eval(Question)
-    print(dictResponse)
-    if type(dictResponse)!= dict:
-        print(dictResponse[0])
-        QuestionBank.append(dictResponse[0])
-    else:
-        QuestionBank.append(dictResponse)
+        #Output Processing 
 
-# StramlitCode 
-import streamlit as st
+        Response=response['choices'][0]['message']['content']
+        Response=Response.replace('{{','{').replace('}}','}')
 
-if 'SubmitButton' not in st.session_state:
-    st.session_state['SubmitButton']=False
+        Response=Response.replace(")","-")
+        Responselst=Response.split("\n\n")
 
-if st.session_state['SubmitButton']==False:
+        for Question in Responselst:
+            dictResponse=ast.literal_eval(Question)
+           
+            st.session_state['QuestionBank']=[]
+            if type(dictResponse)!= dict:
+                st.session_state['QuestionBank'].append(dictResponse[0])
+            else:
+                st.session_state['QuestionBank'].append(dictResponse)
+
+        st.session_state['isQuestionGenerated']=True
+ 
+    st.session_state['StartQuiz']=False
+    st.rerun()
+
+if st.session_state['isQuestionGenerated']==True:
     user_answers = {}
-    for idx,Question in enumerate(QuestionBank):
+    for idx,Question in enumerate(st.session_state['QuestionBank']):
         if Question['Categary']=='MCQ':
-            st.write(idx,)
             st.subheader(f"Q{idx+1}: {Question['Question']}")
             selected = st.radio(f"Select an answer for Q{idx+1}", Question['Options'], key=f"q_{idx+1}")
             user_answers[idx+1] = selected
-            # st.session_state['user_answers']=user_answers
+                    # st.session_state['user_answers']=user_answers
 
         if Question['Categary']=='TF':
-            st.write(idx,)
             st.subheader(f"Q{idx+1}: {Question['Question']}")
             selected = st.radio(f"Select an answer for Q{idx+1}", Question['Options'], key=f"q_{idx+1}")
             user_answers[idx+1] = selected
             # st.session_state['user_answers']=user_answers
 
         if Question['Categary']=='SAQ':
-            st.write(idx,)
             st.subheader(f"Q{idx+1}: {Question['Question']}")
             selected = st.text_area(f"Select an answer for Q{idx+1}", key=f"q_{idx+1}")
             user_answers[idx+1] = selected
-            # st.session_state['user_answers']=user_answers
-        st.session_state['user_answers']=user_answers
+                    # st.session_state['user_answers']=user_answers
+    st.session_state['userAnswers']=user_answers
 
+if st.session_state['isAnswerGenerated']==False:
+    if st.session_state['isQuestionGenerated']==True:
+        SubmitButton=st.button("SubmitAnswer")
 
-    SubmitButton=st.button("Submit")
-    if SubmitButton:
-        st.session_state['SubmitButton']=True
-        st.rerun()
+        if SubmitButton:
+            st.session_state['isSubmitAnswer']=True
+            st.session_state['isQuestionGenerated']=False
+            st.rerun()
 
-if st.session_state['SubmitButton']==True:
-    with st.spinner("Wait>>> Result Generation in processs"):
-        st.write(st.session_state['user_answers'])
+if st.session_state['isSubmitAnswer']==True:
+        with st.spinner("Wait>>> Result Generation in processs"):
+            #Creating the question Answer Bank send back to LLM 
 
-        #Creating the question Answer Bank send back to LLM 
-
-        QuestionAnswerBank=[]
-        for num in range(len(QuestionBank)):
-            tempdict=dict()
-            tempdict['Categary']=QuestionBank[num]['Categary']
-            tempdict[f"Question No:-{num}"]=QuestionBank[num]['Question']
-            tempdict[f"Answer:-"]=st.session_state['user_answers'][num+1]
-            QuestionAnswerBank.append(tempdict)
-
-        st.write(QuestionAnswerBank)
-
-    
-        AnswerCheckPrompt=AnswerCheckPrompt.format(QuestionAnswerBank=QuestionAnswerBank)
-        responseA = client.generate_completion(
-        prompt=AnswerCheckPrompt,
-        temperature=0.7,
-        max_tokens=1000
-                    )
-
-        # Output Processing 
-
-        ResponseAnswer=responseA['choices'][0]['message']['content']
+            QuestionAnswerBank=[]
+            for num in range(len(st.session_state['QuestionBank'])):
+                tempdict=dict()
+                tempdict['Categary']=st.session_state['QuestionBank'][num]['Categary']
+                tempdict[f"Question No:-{num}"]=st.session_state['QuestionBank'][num]['Question']
+                tempdict[f"Answer:-"]=st.session_state['userAnswers'][num+1]
+                QuestionAnswerBank.append(tempdict)
         
-        tempsplit=ResponseAnswer.split("|,")
-        ResultBank=[]
-        for result in tempsplit:
-            import json
-            dictResult=data_dict = json.loads(result)
-            ResultBank.append(dictResult)
-        st.success("Result is Generated")
-        
-        for Result in ResultBank:
-            for key in list(Result.keys()):
-                st.write(f"{key}:- {Result[key]}")
-            st.write("=========================================================")
-            st.write()
+            AnswerCheckPrompt=AnswerCheckPrompt.format(QuestionAnswerBank=QuestionAnswerBank)
+            responseA = client.generate_completion(
+            prompt=AnswerCheckPrompt,
+            temperature=0.7,
+            max_tokens=1000
+                        )
 
+            # Output Processing 
+
+            ResponseAnswer=responseA['choices'][0]['message']['content']
+            
+            tempsplit=ResponseAnswer.split("|,")
+            ResultBank=[]
+            for result in tempsplit:
+                import json
+                dictResult=data_dict = json.loads(result)
+                ResultBank.append(dictResult)
+            st.success("Result is Generated")
+            st.session_state['isAnswerGenerated']=True
+            
+            for Result in ResultBank:
+                for key in list(Result.keys()):
+                    st.write(f"{key}:- {Result[key]}")
+                st.write("=========================================================")
+                st.write()
+           
+if 'isSubmitAnswer' in st.session_state:
+    if st.session_state['isSubmitAnswer']==True:  
         Resetbutton=st.button("Reset")
+        st.session_state['isSubmitAnswer']=False
         if Resetbutton:
             for key in st.session_state.keys():
                 del st.session_state[key]
-            st.rerun()
+                st.rerun()
+
+            
 
 
 
+                
 
-
-
-  
 
