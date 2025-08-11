@@ -72,11 +72,9 @@ if st.session_state['StartQuiz']==True:
 
         Response=Response.replace(")","-")
         Responselst=Response.split("\n\n")
-
+        st.session_state['QuestionBank']=[]
         for Question in Responselst:
             dictResponse=ast.literal_eval(Question)
-           
-            st.session_state['QuestionBank']=[]
             if type(dictResponse)!= dict:
                 st.session_state['QuestionBank'].append(dictResponse[0])
             else:
@@ -170,6 +168,7 @@ if 'isSubmitAnswer' in st.session_state:
 
 
                 
+
 
 
 
