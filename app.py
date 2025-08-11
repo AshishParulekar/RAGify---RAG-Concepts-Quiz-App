@@ -7,6 +7,11 @@ from dotenv import load_dotenv
 import streamlit as st 
 import ast
 
+#load variable 
+
+load_dotenv() 
+Euron_Key=os.getenv("Euron_Key")
+
 st.set_page_config('RAGiFY-Rag Concepts Quiz',page_icon=":sunrise:",layout="wide")
 st.header(" '🌈 ' Welcome To RAGIFY:-RAG concepts QUIZ")
 
@@ -35,13 +40,6 @@ if st.session_state['isSubmitAnswer']==False:
         if StartButton:
             st.session_state['StartQuiz']=True
         
-
-#load variable 
-
-load_dotenv() 
-Euron_Key=os.getenv("Euron_Key")
-
-
 #Prompt Reading
 
 promptFile=pd.read_excel("Prompt.xlsx")
@@ -172,5 +170,7 @@ if 'isSubmitAnswer' in st.session_state:
 
 
                 
+
+
 
 
