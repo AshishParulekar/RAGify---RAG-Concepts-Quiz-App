@@ -7,11 +7,6 @@ from dotenv import load_dotenv
 import streamlit as st 
 import ast
 
-#load variable 
-
-load_dotenv() 
-Euron_Key=os.getenv("Euron_Key")
-
 st.set_page_config('RAGiFY-Rag Concepts Quiz',page_icon=":sunrise:",layout="wide")
 st.header(" '🌈 ' Welcome To RAGIFY:-RAG concepts QUIZ")
 
@@ -40,6 +35,13 @@ if st.session_state['isSubmitAnswer']==False:
         if StartButton:
             st.session_state['StartQuiz']=True
         
+
+#load variable 
+
+load_dotenv() 
+Euron_Key=os.getenv("Euron_Key")
+
+
 #Prompt Reading
 
 promptFile=pd.read_excel("Prompt.xlsx")
@@ -58,7 +60,17 @@ client = EuriaiClient(
 #--------------------------------------------------------------------------
 
 if st.session_state['StartQuiz']==True:
-    with st.spinner("Generating Question   Please wait...."):
+    #with st.spinner("Generating Question   Please wait...."):
+
+    st.markdown("""<style>
+    div[data-testid="stSpinner"] p {
+        color: #FF5733; /* orange text */
+        font-weight: bold;
+        font-size: 18px;}
+    </style>
+    """,unsafe_allow_html=True)
+
+    with st.spinner("⚡ Generating Questions... Please wait..."):
         response = client.generate_completion(
                 prompt=QuesGenPrompt,
                 temperature=0.7,
@@ -72,15 +84,21 @@ if st.session_state['StartQuiz']==True:
 
         Response=Response.replace(")","-")
         Responselst=Response.split("\n\n")
+
+        st.write(Responselst)
         st.session_state['QuestionBank']=[]
+
         for Question in Responselst:
             dictResponse=ast.literal_eval(Question)
+           
+            
             if type(dictResponse)!= dict:
                 st.session_state['QuestionBank'].append(dictResponse[0])
             else:
                 st.session_state['QuestionBank'].append(dictResponse)
 
         st.session_state['isQuestionGenerated']=True
+        st.session_state['QuestionBank']
  
     st.session_state['StartQuiz']=False
     st.rerun()
@@ -90,13 +108,13 @@ if st.session_state['isQuestionGenerated']==True:
     for idx,Question in enumerate(st.session_state['QuestionBank']):
         if Question['Categary']=='MCQ':
             st.subheader(f"Q{idx+1}: {Question['Question']}")
-            selected = st.radio(f"Select an answer for Q{idx+1}", Question['Options'], key=f"q_{idx+1}")
+            selected = st.radio(f"Select an answer for Q{idx+1}", Question['Options'], key=f"q_{idx+1}",index=None)
             user_answers[idx+1] = selected
                     # st.session_state['user_answers']=user_answers
 
         if Question['Categary']=='TF':
             st.subheader(f"Q{idx+1}: {Question['Question']}")
-            selected = st.radio(f"Select an answer for Q{idx+1}", Question['Options'], key=f"q_{idx+1}")
+            selected = st.radio(f"Select an answer for Q{idx+1}", Question['Options'], key=f"q_{idx+1}",index=None)
             user_answers[idx+1] = selected
             # st.session_state['user_answers']=user_answers
 
@@ -117,7 +135,16 @@ if st.session_state['isAnswerGenerated']==False:
             st.rerun()
 
 if st.session_state['isSubmitAnswer']==True:
-        with st.spinner("Wait>>> Result Generation in processs"):
+        #with st.spinner("Wait>>> Result Generation in processs"):
+        st.markdown("""<style>
+    div[data-testid="stSpinner"] p {
+        color: #FF5733; /* orange text */
+        font-weight: bold;
+        font-size: 18px;}
+    </style>
+    """,unsafe_allow_html=True)
+
+        with st.spinner("💡 Wait>>> Result Generation in processs..."):
             #Creating the question Answer Bank send back to LLM 
 
             QuestionAnswerBank=[]
@@ -140,6 +167,7 @@ if st.session_state['isSubmitAnswer']==True:
             ResponseAnswer=responseA['choices'][0]['message']['content']
             
             tempsplit=ResponseAnswer.split("|,")
+            print(tempsplit)
             ResultBank=[]
             for result in tempsplit:
                 import json
@@ -147,29 +175,69 @@ if st.session_state['isSubmitAnswer']==True:
                 ResultBank.append(dictResult)
             st.success("Result is Generated")
             st.session_state['isAnswerGenerated']=True
-            
-            for Result in ResultBank:
-                for key in list(Result.keys()):
-                    st.write(f"{key}:- {Result[key]}")
-                st.write("=========================================================")
-                st.write()
+
+            tab1, tab2,  = st.tabs(["Result", "Correct Answers"])
+
+            with tab1:
+
+                total=len(ResultBank)
+                score=0
+                for i in ResultBank:
+                    if i['Result']=="Correct":
+                        score=+1
+              
+                percentage = int((score/total)*100)
+
+                st.markdown("<h2 style='text-align: center; color: #4CAF50;'>🎉 Quiz Completed! 🎉</h2>", unsafe_allow_html=True)
+
+                # Show Score as metric
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    st.metric("✅ Correct Answers", score)
+                with col2:
+                    st.metric("❌ Wrong Answers", total - score)
+                with col3:
+                    st.metric("📊 Percentage", f"{percentage}%")
+
+                # Progress bar
+                st.progress(percentage / 100)
+
+                # Personalized message
+                if percentage == 100:
+                    st.success("🔥 Perfect Score! You're a RAG Master!")
+                elif percentage >= 70:
+                    st.info("👏 Great job! You really know your stuff.")
+                elif percentage >= 40:
+                    st.warning("🙂 Not bad! A little more practice and you’ll ace it.")
+                else:
+                    st.error("💡 Keep learning! Try again to improve your score.")
+
+                # Optional: Balloons 🎈
+                if percentage >= 70:
+                    st.balloons()
+
+
+            with tab2:
+                for Result in ResultBank:
+                    for key in list(Result.keys()):
+                        st.write(f"{key}:- {Result[key]}")
+                    st.write("=========================================================")
+                    st.write()
            
 if 'isSubmitAnswer' in st.session_state:
     if st.session_state['isSubmitAnswer']==True:  
-        Resetbutton=st.button("Reset")
         st.session_state['isSubmitAnswer']=False
+        st.session_state['isQuestionGenerated']=False
+        st.session_state['isAnswerGenerated']=False
+        st.session_state['StartQuiz']=False
+        Resetbutton=st.button("Reset")
         if Resetbutton:
-            for key in st.session_state.keys():
-                del st.session_state[key]
+            # for key in st.session_state.keys():
+                # del st.session_state[key]
                 st.rerun()
 
             
 
-
-
                 
-
-
-
 
 
