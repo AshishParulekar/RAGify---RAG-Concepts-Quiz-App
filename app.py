@@ -184,7 +184,8 @@ if st.session_state['isSubmitAnswer']==True:
                 score=0
                 for i in ResultBank:
                     if i['Result']=="Correct":
-                        score=+1
+                        score=score+1
+                print(score)
               
                 percentage = int((score/total)*100)
 
