@@ -85,7 +85,7 @@ if st.session_state['StartQuiz']==True:
         Response=Response.replace(")","-")
         Responselst=Response.split("\n\n")
 
-        st.write(Responselst)
+        #st.write(Responselst)
         st.session_state['QuestionBank']=[]
 
         for Question in Responselst:
@@ -167,7 +167,7 @@ if st.session_state['isSubmitAnswer']==True:
             ResponseAnswer=responseA['choices'][0]['message']['content']
             
             tempsplit=ResponseAnswer.split("|,")
-            print(tempsplit)
+            #print(tempsplit)
             ResultBank=[]
             for result in tempsplit:
                 import json
@@ -240,5 +240,6 @@ if 'isSubmitAnswer' in st.session_state:
             
 
                 
+
 
 
