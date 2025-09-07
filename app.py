@@ -98,7 +98,7 @@ if st.session_state['StartQuiz']==True:
                 st.session_state['QuestionBank'].append(dictResponse)
 
         st.session_state['isQuestionGenerated']=True
-        st.session_state['QuestionBank']
+        #st.session_state['QuestionBank']
  
     st.session_state['StartQuiz']=False
     st.rerun()
@@ -185,7 +185,7 @@ if st.session_state['isSubmitAnswer']==True:
                 for i in ResultBank:
                     if i['Result']=="Correct":
                         score=score+1
-                print(score)
+                #print(score)
               
                 percentage = int((score/total)*100)
 
@@ -240,6 +240,7 @@ if 'isSubmitAnswer' in st.session_state:
             
 
                 
+
 
 
 
